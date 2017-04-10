@@ -33,7 +33,12 @@ type (
 )
 
 var (
-	DiffOperator = "<>"
-	OrderByASC   = "ASC"
-	OrderByDESC  = "DESC"
+	DiffOperator           = "<>"
+	EqualOperator          = "="
+	LessOperator           = "<"
+	LessOrEqualOperator    = "<="
+	GreaterOperator        = ">"
+	GreaterOrEqualOperator = ">="
+	OrderByASC             = "ASC"
+	OrderByDESC            = "DESC"
 )
