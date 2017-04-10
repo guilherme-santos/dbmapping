@@ -142,10 +142,7 @@ func (t *Table) Query(fields []string, where []dbmapping.WhereClause, sort []dbm
 		clauses := make([]string, 0, len(where))
 
 		for _, clause := range where {
-			fieldMap, ok := t.Fields[clause.Field]
-			if !ok {
-				return nil, fmt.Errorf("Cannot use field[%s] in where clause: unknown field", clause.Field)
-			}
+			fieldMap := t.Fields[clause.Field]
 
 			var value string
 			if typeIsString(fieldMap) {
