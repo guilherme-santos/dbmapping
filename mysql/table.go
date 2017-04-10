@@ -192,12 +192,12 @@ func (t *Table) Query(fields []string, where []dbmapping.WhereClause, sort []dbm
 	var results []map[string]interface{}
 
 	for rows.Next() {
-		result, err := t.hydrate(fields, rows)
+		doc, err := t.hydrate(fields, rows)
 		if err != nil {
 			return nil, err
 		}
 
-		results = append(results, result)
+		results = append(results, doc)
 	}
 
 	if err := rows.Err(); err != nil {

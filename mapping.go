@@ -9,6 +9,7 @@ type (
 		CreateTable() error
 		Insert(doc map[string]interface{}) error
 		Update(doc map[string]interface{}) error
+		QueryOne(fields []string, where []WhereClause, sort []OrderByClause) (map[string]interface{}, error)
 		Query(fields []string, where []WhereClause, sort []OrderByClause, limit []int) ([]map[string]interface{}, error)
 	}
 
