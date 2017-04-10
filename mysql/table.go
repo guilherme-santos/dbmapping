@@ -127,7 +127,7 @@ func (t *Table) Update(doc map[string]interface{}) error {
 	return err
 }
 
-func (t *Table) Query(fields []string, where []dbmapping.WhereClause, sort []dbmapping.OrderByClause, limit []int) ([]map[string]interface{}, error) {
+func (t *Table) generateSQL(fields []string, where []dbmapping.WhereClause, sort []dbmapping.OrderByClause, limit []int) (string, []string, error) {
 	if fields == nil {
 		fields = make([]string, 0, len(t.Fields))
 
@@ -175,11 +175,38 @@ func (t *Table) Query(fields []string, where []dbmapping.WhereClause, sort []dbm
 			sql += fmt.Sprintf(", %d", limit[1])
 		}
 		if len(limit) > 2 {
-			return nil, errors.New("Invalid format to limit use []int{offset} or []int{offset, length}")
+			return "", nil, errors.New("Invalid format to limit use []int{offset} or []int{offset, length}")
 		}
 	}
 
-	rows, err := t.db.Query(sql)
+	return sql, fields, nil
+}
+
+func (t *Table) QueryOne(fields []string, where []dbmapping.WhereClause, sort []dbmapping.OrderByClause) (map[string]interface{}, error) {
+	querySQL, fields, err := t.generateSQL(fields, where, sort, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	row := t.db.QueryRow(querySQL)
+
+	doc, err := t.hydrate(fields, row)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return doc, nil
+}
+
+func (t *Table) Query(fields []string, where []dbmapping.WhereClause, sort []dbmapping.OrderByClause, limit []int) ([]map[string]interface{}, error) {
+	querySQL, fields, err := t.generateSQL(fields, where, sort, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := t.db.Query(querySQL)
 	if err != nil {
 		return nil, err
 	}
