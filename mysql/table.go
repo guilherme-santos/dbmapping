@@ -110,7 +110,7 @@ func (t *Table) Upsert(doc map[string]interface{}) error {
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(append(values, values...))
+	_, err = stmt.Exec(append(values, values...)...)
 	return err
 }
 
