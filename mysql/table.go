@@ -64,9 +64,9 @@ func (t *Table) CreateTable() error {
 }
 
 func (t *Table) Insert(doc map[string]interface{}) error {
-	insertSQL, err := t.genInsertSQL(doc, false)
+	insertSQL, values, err := t.genInsertSQL(doc, false)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	stmt, err := t.db.Prepare(insertSQL)
@@ -81,9 +81,9 @@ func (t *Table) Insert(doc map[string]interface{}) error {
 }
 
 func (t *Table) Update(doc map[string]interface{}) error {
-	updateSQL, err := t.genUpdateSQL(doc)
+	updateSQL, values, primaryKeyValues, err := t.genUpdateSQL(doc)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	stmt, err := t.db.Prepare(updateSQL)
@@ -98,9 +98,9 @@ func (t *Table) Update(doc map[string]interface{}) error {
 }
 
 func (t *Table) Upsert(doc map[string]interface{}) error {
-	upsertSQL, err := t.genInsertSQL(doc, true)
+	upsertSQL, values, err := t.genInsertSQL(doc, true)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	stmt, err := t.db.Prepare(upsertSQL)

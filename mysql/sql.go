@@ -63,7 +63,7 @@ func (t *Table) genSelectSQL(fields []string, where []dbmapping.WhereClause, sor
 	return sql, fields, nil
 }
 
-func (t *Table) genUpdateSQL(doc map[string]interface{}) (string, error) {
+func (t *Table) genUpdateSQL(doc map[string]interface{}) (string, []interface{}, []interface{}, error) {
 	primaryKeyFields := make([]string, 0, 1)
 	primaryKeyValues := make([]interface{}, 0, 1)
 	fields := make([]string, 0, len(doc))
@@ -72,7 +72,7 @@ func (t *Table) genUpdateSQL(doc map[string]interface{}) (string, error) {
 	for key, value := range doc {
 		field, ok := t.Fields[key]
 		if !ok {
-			return "", fmt.Errorf("Trying to update unknown field[%s]", key)
+			return "", nil, nil, fmt.Errorf("Trying to update unknown field[%s]", key)
 		}
 
 		if field.PrimaryKey {
@@ -91,16 +91,16 @@ func (t *Table) genUpdateSQL(doc map[string]interface{}) (string, error) {
         WHERE %s
     `, t.Name, strings.Join(fields, ","), strings.Join(primaryKeyFields, " AND "))
 
-	return sql, nil
+	return sql, values, primaryKeyValues, nil
 }
 
-func (t *Table) genInsertSQL(doc map[string]interface{}, upsert bool) (string, error) {
+func (t *Table) genInsertSQL(doc map[string]interface{}, upsert bool) (string, []interface{}, error) {
 	fields := make([]string, 0, len(doc))
 	values := make([]interface{}, 0, len(doc))
 
 	for key, value := range doc {
 		if _, ok := t.Fields[key]; !ok {
-			return "", fmt.Errorf("Trying to add unknown field[%s]", key)
+			return "", nil, fmt.Errorf("Trying to add unknown field[%s]", key)
 		}
 
 		fields = append(fields, key)
@@ -113,8 +113,8 @@ func (t *Table) genInsertSQL(doc map[string]interface{}, upsert bool) (string, e
     `, t.Name, strings.Join(fields, ","), strings.Repeat("?,", len(fields)-1)+"?")
 
 	if upsert {
-		sql += " ON DUPLICATE KEY UPDATE " + strings.Join(fields, "=?") + "=?"
+		sql += " ON DUPLICATE KEY UPDATE " + strings.Join(fields, "=?,") + "=?"
 	}
 
-	return sql, nil
+	return sql, values, nil
 }
