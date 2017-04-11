@@ -64,24 +64,12 @@ func (t *Table) CreateTable() error {
 }
 
 func (t *Table) Insert(doc map[string]interface{}) error {
-	fields := make([]string, 0, len(doc))
-	values := make([]interface{}, 0, len(doc))
-
-	for key, value := range doc {
-		if _, ok := t.Fields[key]; !ok {
-			return fmt.Errorf("Trying to add unknown field[%s]", key)
-		}
-
-		fields = append(fields, key)
-		values = append(values, value)
+	insertSQL, err := t.genInsertSQL(doc, false)
+	if err != nil {
+		return nil, err
 	}
 
-	sql := fmt.Sprintf(`
-        INSERT INTO %s (%s)
-        VALUES (%s)
-    `, t.Name, strings.Join(fields, ","), strings.Repeat("?,", len(fields)-1)+"?")
-
-	stmt, err := t.db.Prepare(sql)
+	stmt, err := t.db.Prepare(insertSQL)
 	if err != nil {
 		return err
 	}
@@ -93,34 +81,12 @@ func (t *Table) Insert(doc map[string]interface{}) error {
 }
 
 func (t *Table) Update(doc map[string]interface{}) error {
-	primaryKeyFields := make([]string, 0, 1)
-	primaryKeyValues := make([]interface{}, 0, 1)
-	fields := make([]string, 0, len(doc))
-	values := make([]interface{}, 0, len(doc))
-
-	for key, value := range doc {
-		field, ok := t.Fields[key]
-		if !ok {
-			return fmt.Errorf("Trying to update unknown field[%s]", key)
-		}
-
-		if field.PrimaryKey {
-			primaryKeyFields = append(primaryKeyFields, key+"=?")
-			primaryKeyValues = append(primaryKeyValues, value)
-			continue
-		}
-
-		fields = append(fields, key+"=?")
-		values = append(values, value)
+	updateSQL, err := t.genUpdateSQL(doc)
+	if err != nil {
+		return nil, err
 	}
 
-	sql := fmt.Sprintf(`
-        UPDATE %s
-        SET %s
-        WHERE %s
-    `, t.Name, strings.Join(fields, ","), strings.Join(primaryKeyFields, " AND "))
-
-	stmt, err := t.db.Prepare(sql)
+	stmt, err := t.db.Prepare(updateSQL)
 	if err != nil {
 		return err
 	}
@@ -131,63 +97,25 @@ func (t *Table) Update(doc map[string]interface{}) error {
 	return err
 }
 
-func (t *Table) generateSQL(fields []string, where []dbmapping.WhereClause, sort []dbmapping.OrderByClause, limit []int) (string, []string, error) {
-	if fields == nil {
-		fields = make([]string, 0, len(t.Fields))
-
-		for field := range t.Fields {
-			fields = append(fields, field)
-		}
+func (t *Table) Upsert(doc map[string]interface{}) error {
+	upsertSQL, err := t.genInsertSQL(doc, true)
+	if err != nil {
+		return nil, err
 	}
 
-	sql := fmt.Sprintf(`SELECT %s FROM %s`, strings.Join(fields, ","), t.Name)
-
-	if len(where) > 0 {
-		clauses := make([]string, 0, len(where))
-
-		for _, clause := range where {
-			fieldMap := t.Fields[clause.Field]
-
-			var value string
-			if typeIsString(fieldMap) {
-				value = fmt.Sprintf("'%s'", clause.Value)
-			} else {
-				value = clause.Value
-			}
-
-			clauses = append(clauses, fmt.Sprintf("%s%s%s", clause.Field, clause.Type, value))
-		}
-
-		sql += " WHERE " + strings.Join(clauses, " AND ")
+	stmt, err := t.db.Prepare(upsertSQL)
+	if err != nil {
+		return err
 	}
 
-	if len(sort) > 0 {
-		ordersBy := make([]string, 0, len(sort))
+	defer stmt.Close()
 
-		for _, orderBy := range sort {
-			ordersBy = append(ordersBy, fmt.Sprintf("%s %s", orderBy.Field, orderBy.Type))
-		}
-
-		sql += " ORDER BY " + strings.Join(ordersBy, ", ")
-	}
-
-	if limit != nil {
-		if len(limit) > 0 {
-			sql += fmt.Sprintf(" LIMIT %d", limit[0])
-		}
-		if len(limit) > 1 {
-			sql += fmt.Sprintf(", %d", limit[1])
-		}
-		if len(limit) > 2 {
-			return "", nil, errors.New("Invalid format to limit use []int{offset} or []int{offset, length}")
-		}
-	}
-
-	return sql, fields, nil
+	_, err = stmt.Exec(append(values, values...))
+	return err
 }
 
 func (t *Table) QueryOne(fields []string, where []dbmapping.WhereClause, sort []dbmapping.OrderByClause) (map[string]interface{}, error) {
-	querySQL, fields, err := t.generateSQL(fields, where, sort, nil)
+	querySQL, fields, err := t.genSelectSQL(fields, where, sort, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +133,7 @@ func (t *Table) QueryOne(fields []string, where []dbmapping.WhereClause, sort []
 }
 
 func (t *Table) Query(fields []string, where []dbmapping.WhereClause, sort []dbmapping.OrderByClause, limit []int) ([]map[string]interface{}, error) {
-	querySQL, fields, err := t.generateSQL(fields, where, sort, limit)
+	querySQL, fields, err := t.genSelectSQL(fields, where, sort, limit)
 	if err != nil {
 		return nil, err
 	}
