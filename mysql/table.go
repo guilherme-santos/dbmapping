@@ -40,6 +40,10 @@ func (t *Table) CreateTable() error {
 			fieldType += " DEFAULT " + field.Default
 		}
 
+		if !strings.EqualFold("", field.Comment) {
+			fieldType += fmt.Sprintf(" COMMENT '%s'", field.Comment)
+		}
+
 		fields = append(fields, fmt.Sprintf("%s %s", field.Name, fieldType))
 	}
 

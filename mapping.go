@@ -19,6 +19,7 @@ type (
 		Type       string
 		Null       bool
 		Default    string
+		Comment    string
 	}
 
 	WhereClause struct {
