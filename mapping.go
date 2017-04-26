@@ -23,6 +23,10 @@ type (
 		Comment    string
 	}
 
+	IncOperator struct {
+		Amount int
+	}
+
 	WhereClause struct {
 		Field string
 		Type  string

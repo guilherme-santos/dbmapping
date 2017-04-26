@@ -82,7 +82,12 @@ func (t *Table) genUpdateSQL(doc map[string]interface{}) (string, []interface{},
 		}
 
 		fields = append(fields, key+"=?")
-		values = append(values, value)
+
+		if incOperator, ok := value.(dbmapping.IncOperator); ok {
+			values = append(values, key+" + "+value)
+		} else {
+			values = append(values, value)
+		}
 	}
 
 	sql := fmt.Sprintf(`
