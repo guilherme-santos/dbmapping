@@ -81,11 +81,21 @@ func (t *Table) genUpdateSQL(doc map[string]interface{}) (string, []interface{},
 			continue
 		}
 
-		fields = append(fields, key+"=?")
-
 		if incOperator, ok := value.(dbmapping.IncOperator); ok {
-			values = append(values, fmt.Sprintf("%s+%d", key, incOperator.Amount))
+			var signal string
+			if incOperator.Amount > 0 {
+				signal = "+"
+			} else if incOperator.Amount < 0 {
+				signal = "-"
+				incOperator.Amount *= -1 // invert signal
+			} else {
+				continue
+			}
+
+			fields = append(fields, key+"="+key+signal+"?")
+			values = append(values, incOperator.Amount)
 		} else {
+			fields = append(fields, key+"=?")
 			values = append(values, value)
 		}
 	}
