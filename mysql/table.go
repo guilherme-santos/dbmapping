@@ -114,6 +114,20 @@ func (t *Table) Upsert(doc map[string]interface{}) error {
 	return err
 }
 
+func (t *Table) Count(where []dbmapping.WhereClause) (uint, error) {
+	querySQL, _, err := t.genSelectSQL([]string{"COUNT(*)"}, where, nil, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	row := t.db.QueryRow(querySQL)
+
+	var total uint
+	err = row.Scan(&total)
+
+	return total, err
+}
+
 func (t *Table) QueryOne(fields []string, where []dbmapping.WhereClause, sort []dbmapping.OrderByClause) (map[string]interface{}, error) {
 	querySQL, fields, err := t.genSelectSQL(fields, where, sort, nil)
 	if err != nil {

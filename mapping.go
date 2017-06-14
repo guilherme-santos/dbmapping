@@ -10,6 +10,7 @@ type (
 		Insert(doc map[string]interface{}) error
 		Update(doc map[string]interface{}) error
 		Upsert(doc map[string]interface{}) error
+		Count(where []WhereClause) (uint, error)
 		QueryOne(fields []string, where []WhereClause, sort []OrderByClause) (map[string]interface{}, error)
 		Query(fields []string, where []WhereClause, sort []OrderByClause, limit []int) ([]map[string]interface{}, error)
 	}
