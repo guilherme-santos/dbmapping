@@ -10,9 +10,11 @@ type Query interface {
 }
 
 type Marshaler interface {
-	MarshalDB() (map[string]interface{}, error)
+	MarshalDB() (interface{}, error)
 }
 
 type Unmarshaler interface {
 	UnmarshalDB(map[string]interface{}) error
 }
+
+// https://gowalker.org/github.com/golang/appengine/datastore#Query
